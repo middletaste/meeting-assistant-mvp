@@ -1,3 +1,6 @@
+# meeting-assistant-mvp
+A LLM assistant that answers question about your meeting recordings
+
 # Meeting Assistant MVP
 
 An LLM-powered meeting assistant that analyzes meeting transcripts and provides structured insights.
