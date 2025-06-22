@@ -16,7 +16,7 @@ describe('ChunkingService (integration)', () => {
     service = new ChunkingService();
   });
 
-  it('should analyze a meeting transcript with chunks using the real Vertex AI API', async () => {
+  it('should analyze a meeting transcript with chunks using the LLM service', async () => {
     console.log('\n📝 Test Input:');
     const mockContext: MeetingContext = {
       transcript: `

@@ -1,4 +1,4 @@
-import { LangChainLLMService } from './langchain-service';
+import { LLMServiceFactory } from './service-factory';
 import { MeetingContext } from './types';
 
 beforeAll(() => {
@@ -9,17 +9,24 @@ afterAll(() => {
 });
 
 describe('LangChainLLMService (integration)', () => {
-  let service: LangChainLLMService;
+  let service: any;
 
   beforeEach(() => {
-    console.log('\n=== Starting LLM Service Integration Test ===');
-    service = new LangChainLLMService();
+    console.log('\n=== Starting LangChain Service Integration Test ===');
+    service = LLMServiceFactory.createService();
   });
 
-  it('should analyze a meeting transcript using the real Vertex AI API', async () => {
+  it('should analyze a meeting transcript using the LLM service', async () => {
     console.log('\n📝 Test Input:');
     const mockContext: MeetingContext = {
-      transcript: 'John: Let\'s discuss the Q1 roadmap. Alice: I think we should focus on user authentication first. Bob: Agreed, and we need to improve the mobile experience.',
+      transcript: `
+        John: Welcome everyone to our Q1 planning meeting. Let's discuss our priorities.
+        Alice: I think we should focus on improving the user authentication system first.
+        Bob: Agreed, and we need to address the mobile app performance issues.
+        John: Good points. Let's set these as our top priorities.
+        Alice: I can lead the authentication improvements.
+        Bob: I'll handle the mobile optimization.
+      `,
       participants: ['John', 'Alice', 'Bob'],
       meetingType: 'Planning',
       duration: 30,
@@ -50,5 +57,5 @@ describe('LangChainLLMService (integration)', () => {
     expect(typeof analysis.summary).toBe('string');
 
     console.log('\n✅ All assertions passed!');
-  }, 60000); // 60s timeout for real API call
+  }, 120000); // 2 min timeout for real API call
 });

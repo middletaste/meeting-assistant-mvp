@@ -1,6 +1,5 @@
 import { VertexAI } from '@google-cloud/vertexai';
 import { LLMService, MeetingContext, MeetingAnalysis } from './types';
-import * as path from 'path';
 
 // This class is the core logic for analyzing meetings using Vertex AI's LLM
 export class LangChainLLMService implements LLMService {
@@ -9,20 +8,10 @@ export class LangChainLLMService implements LLMService {
   private location: string;  // Google Cloud region
 
   constructor() {
-    // Set the path to your Google Cloud credentials (needed for authentication)
-    process.env.GOOGLE_APPLICATION_CREDENTIALS = path.join(
-      'C:',
-      'Users',
-      'Elder',
-      'AppData',
-      'Roaming',
-      'gcloud',
-      'application_default_credentials.json'
-    );
+    // Use environment variables for sensitive configuration
+    this.projectId = process.env.GOOGLE_CLOUD_PROJECT_ID || 'your-project-id';
+    this.location = process.env.GOOGLE_CLOUD_LOCATION || 'us-central1';
     
-    // Set your Google Cloud project and location
-    this.projectId = 'capybaraog';
-    this.location = 'us-central1';
     // Initialize the VertexAI client
     this.model = new VertexAI({
       project: this.projectId,

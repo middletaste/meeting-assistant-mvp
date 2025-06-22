@@ -1,12 +1,13 @@
-import { LangChainLLMService } from './langchain-service';
+import { LLMService } from './types';
 import { MeetingContext, MeetingAnalysis } from './types';
+import { LLMServiceFactory } from './service-factory';
 
 // This service splits the meeting transcript into chunks and summarizes each chunk
 export class ChunkingService {
-  private llmService: LangChainLLMService;
+  private llmService: LLMService;
 
   constructor() {
-    this.llmService = new LangChainLLMService();
+    this.llmService = LLMServiceFactory.createService();
   }
 
   // Splits the transcript into chunks (e.g., by speaker)
