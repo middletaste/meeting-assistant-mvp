@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { StorageService } from '@/services/storage/storage-service';
 import { QueueService } from '@/services/queue/queue-service';
-import formidable, { Fields, Files } from 'formidable';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { FormData as FormDataNode, File } from 'formdata-node';
+import { FormDataEncoder } from 'form-data-encoder';
 
 export const config = {
   api: {
@@ -23,37 +22,28 @@ const MeetingAnalysisRequestSchema = z.object({
   audioPath: z.string().optional(),
 });
 
-async function parseForm(req: NextRequest) {
-  return new Promise<{ fields: Fields; files: Files }>((resolve, reject) => {
-    const form = formidable({
-      multiples: false,
-      uploadDir: path.join(process.cwd(), 'uploads'),
-      keepExtensions: true,
-    });
-    form.parse(req as any, (err: any, fields: Fields, files: Files) => {
-      if (err) reject(err);
-      else resolve({ fields, files });
-    });
-  });
-}
-
 export async function POST(req: NextRequest) {
   try {
-    // Parse multipart form
-    const { fields, files } = await parseForm(req);
-    const transcript = typeof fields.transcript === 'string' ? fields.transcript : '';
-    let participantsRaw = '';
-    if (Array.isArray(fields.participants)) {
-      participantsRaw = fields.participants.join(',');
-    } else if (typeof fields.participants === 'string') {
-      participantsRaw = fields.participants;
-    }
-    const participants = participantsRaw.split(',').map((p: string) => p.trim()).filter(Boolean);
-    const meetingType = fields.meetingType || '';
-    const duration = Number(fields.duration);
+    // Parse multipart form using formData()
+    const formData = await req.formData();
+    const transcript = formData.get('transcript')?.toString() || '';
+    const participantsRaw = formData.get('participants')?.toString() || '';
+    const participants = participantsRaw.split(',').map((p) => p.trim()).filter(Boolean);
+    const meetingType = formData.get('meetingType')?.toString() || '';
+    const duration = Number(formData.get('duration'));
     let audioPath = '';
-    if (files.audio && Array.isArray(files.audio) && files.audio[0] && files.audio[0].filepath) {
-      audioPath = files.audio[0].filepath;
+    const audioFile = formData.get('audio');
+    if (audioFile && typeof audioFile === 'object' && 'arrayBuffer' in audioFile) {
+      // Save the file to disk (MVP: local storage)
+      const buffer = Buffer.from(await audioFile.arrayBuffer());
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      const uploadsDir = path.join(process.cwd(), 'uploads');
+      await fs.mkdir(uploadsDir, { recursive: true });
+      const fileName = `${Date.now()}-${audioFile.name}`;
+      const filePath = path.join(uploadsDir, fileName);
+      await fs.writeFile(filePath, buffer);
+      audioPath = filePath;
     }
     const validatedData = MeetingAnalysisRequestSchema.parse({
       transcript,
@@ -99,4 +89,36 @@ export async function GET() {
       { status: 500 }
     );
   }
-} 
+}
+
+it('should accept audio upload and metadata', async () => {
+  const fileBuffer = Buffer.from('fake audio content');
+  const file = new File([fileBuffer], 'test-audio.mp3', { type: 'audio/mp3' });
+
+  const form = new FormDataNode();
+  form.append('audio', file);
+  form.append('participants', 'Alice,Bob');
+  form.append('meetingType', 'Planning');
+  form.append('duration', '30');
+  form.append('transcript', 'Test transcript');
+
+  const encoder = new FormDataEncoder(form);
+  const chunks: Uint8Array[] = [];
+  for await (const chunk of encoder.encode()) {
+    chunks.push(chunk);
+  }
+  // Use Uint8Array instead of Buffer
+  const bodyUint8 = Buffer.concat(chunks);
+
+  const request = new NextRequest('http://localhost:3000/api/meetings', {
+    method: 'POST',
+    headers: Object.fromEntries(Object.entries(encoder.headers)),
+    body: bodyUint8,
+  });
+
+  const response = await POST(request);
+  expect(response.status).toBe(200);
+  const json = await response.json();
+  expect(json.success).toBe(true);
+  expect(json.data.status).toBe('pending');
+}); 

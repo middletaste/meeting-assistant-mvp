@@ -5,10 +5,21 @@ import { QueueService } from '@/services/queue/queue-service';
 import { createMocks } from 'node-mocks-http';
 import fs from 'fs';
 import path from 'path';
+import { Request, FormData } from 'undici';
+import { Readable } from 'stream';
+import { FormData as FormDataNode, File } from 'formdata-node';
+import { FormDataEncoder } from 'form-data-encoder';
 
 // Mock the services
 jest.mock('@/services/storage/storage-service');
 jest.mock('@/services/queue/queue-service');
+
+beforeAll(() => {
+  jest.spyOn(console, 'log').mockImplementation(() => {});
+});
+afterAll(() => {
+  (console.log as jest.Mock).mockRestore();
+});
 
 describe('Meetings API', () => {
   const mockStorageService = StorageService as jest.MockedClass<typeof StorageService>;
@@ -24,14 +35,23 @@ describe('Meetings API', () => {
       mockStorageService.prototype.storeMeeting.mockResolvedValue(mockId);
       mockQueueService.prototype.addToQueue.mockResolvedValue();
 
+      // Use FormDataNode for multipart/form-data
+      const form = new FormDataNode();
+      form.append('transcript', 'Test transcript');
+      form.append('participants', 'John,Alice');
+      form.append('meetingType', 'Test Meeting');
+      form.append('duration', '30');
+      const encoder = new FormDataEncoder(form);
+      const chunks: Uint8Array[] = [];
+      for await (const chunk of encoder.encode()) {
+        chunks.push(chunk);
+      }
+      const bodyUint8 = Buffer.concat(chunks);
+
       const request = new NextRequest('http://localhost:3000/api/meetings', {
         method: 'POST',
-        body: JSON.stringify({
-          transcript: 'Test transcript',
-          participants: ['John', 'Alice'],
-          meetingType: 'Test Meeting',
-          duration: 30,
-        }),
+        headers: Object.fromEntries(Object.entries(encoder.headers)),
+        body: bodyUint8,
       });
 
       const response = await POST(request);
@@ -46,14 +66,23 @@ describe('Meetings API', () => {
     });
 
     it('should return 400 for invalid request data', async () => {
+      // Use FormDataNode for multipart/form-data
+      const form = new FormDataNode();
+      form.append('transcript', ''); // Invalid: empty transcript
+      form.append('participants', '');
+      form.append('meetingType', '');
+      form.append('duration', '-1');
+      const encoder = new FormDataEncoder(form);
+      const chunks: Uint8Array[] = [];
+      for await (const chunk of encoder.encode()) {
+        chunks.push(chunk);
+      }
+      const bodyUint8 = Buffer.concat(chunks);
+
       const request = new NextRequest('http://localhost:3000/api/meetings', {
         method: 'POST',
-        body: JSON.stringify({
-          transcript: '', // Invalid: empty transcript
-          participants: [],
-          meetingType: '',
-          duration: -1,
-        }),
+        headers: Object.fromEntries(Object.entries(encoder.headers)),
+        body: bodyUint8,
       });
 
       const response = await POST(request);
@@ -101,29 +130,39 @@ describe('Meetings API', () => {
 
   describe('POST /api/meetings (multipart)', () => {
     it('should accept audio upload and metadata', async () => {
-      // Prepare a fake audio file
-      const audioPath = path.join(__dirname, 'test-audio.mp3');
-      fs.writeFileSync(audioPath, 'fake audio content');
-      const formData = new FormData();
-      formData.append('audio', new File([fs.readFileSync(audioPath)], 'test-audio.mp3', { type: 'audio/mp3' }));
-      formData.append('participants', 'Alice,Bob');
-      formData.append('meetingType', 'Planning');
-      formData.append('duration', '30');
-      formData.append('transcript', 'Test transcript');
+      // Prepare a fake audio file buffer
+      const fileBuffer = Buffer.from('fake audio content');
+      const file = new File([fileBuffer], 'test-audio.mp3', { type: 'audio/mp3' });
 
-      // Create a mock request/response
-      const { req, res } = createMocks({
+      // Construct form data using formdata-node
+      const form = new FormDataNode();
+      form.append('audio', file);
+      form.append('participants', 'Alice,Bob');
+      form.append('meetingType', 'Planning');
+      form.append('duration', '30');
+      form.append('transcript', 'Test transcript');
+
+      // Encode form data for Node.js request
+      const encoder = new FormDataEncoder(form);
+      // Collect all chunks from the async generator
+      const chunks: Uint8Array[] = [];
+      for await (const chunk of encoder.encode()) {
+        chunks.push(chunk);
+      }
+      const bodyUint8 = Buffer.concat(chunks);
+
+      // Pass the correct headers and body to NextRequest
+      const request = new NextRequest('http://localhost:3000/api/meetings', {
         method: 'POST',
-        body: formData,
+        headers: Object.fromEntries(Object.entries(encoder.headers)),
+        body: bodyUint8,
       });
 
-      // Call the handler
-      const response = await POST(req);
+      const response = await POST(request);
       expect(response.status).toBe(200);
       const json = await response.json();
       expect(json.success).toBe(true);
       expect(json.data.status).toBe('pending');
-      fs.unlinkSync(audioPath);
     });
   });
 }); 

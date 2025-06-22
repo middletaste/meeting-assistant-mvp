@@ -5,6 +5,13 @@ import { LangChainLLMService } from './langchain-service';
 // Mock the LLM service
 jest.mock('./langchain-service');
 
+beforeAll(() => {
+  jest.spyOn(console, 'log').mockImplementation(() => {});
+});
+afterAll(() => {
+  (console.log as jest.Mock).mockRestore();
+});
+
 describe('ChunkingService', () => {
   let service: ChunkingService;
   let mockLLMService: jest.Mocked<LangChainLLMService>;

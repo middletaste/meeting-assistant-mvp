@@ -1,6 +1,13 @@
 import { ChunkingService } from './chunking-service';
 import { MeetingContext } from './types';
 
+beforeAll(() => {
+  jest.spyOn(console, 'log').mockImplementation(() => {});
+});
+afterAll(() => {
+  (console.log as jest.Mock).mockRestore();
+});
+
 describe('ChunkingService (integration)', () => {
   let service: ChunkingService;
 

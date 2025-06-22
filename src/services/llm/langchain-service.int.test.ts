@@ -1,6 +1,13 @@
 import { LangChainLLMService } from './langchain-service';
 import { MeetingContext } from './types';
 
+beforeAll(() => {
+  jest.spyOn(console, 'log').mockImplementation(() => {});
+});
+afterAll(() => {
+  (console.log as jest.Mock).mockRestore();
+});
+
 describe('LangChainLLMService (integration)', () => {
   let service: LangChainLLMService;
 
