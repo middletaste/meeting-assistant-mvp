@@ -36,15 +36,19 @@ const MeetingForm: React.FC = () => {
       });
       if (!res.ok) throw new Error('Upload failed');
       
-      const data = await res.json();
+      await res.json();
       setStatus('success');
       
       // Redirect to meetings list after 2 seconds
       setTimeout(() => {
         window.location.href = '/meetings';
       }, 2000);
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Unknown error');
+      }
       setStatus('error');
     }
   };

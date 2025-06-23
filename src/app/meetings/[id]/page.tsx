@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
@@ -29,11 +29,8 @@ export default function MeetingDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchMeeting();
-  }, [meetingId]);
-
-  const fetchMeeting = async () => {
+  const fetchMeeting = useCallback(async () => {
+    if (!meetingId) return;
     try {
       const response = await fetch(`/api/meetings/${meetingId}`);
       if (!response.ok) {
@@ -44,12 +41,20 @@ export default function MeetingDetailPage() {
       }
       const data = await response.json();
       setMeeting(data.data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unknown error occurred.');
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [meetingId]);
+
+  useEffect(() => {
+    fetchMeeting();
+  }, [fetchMeeting]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {

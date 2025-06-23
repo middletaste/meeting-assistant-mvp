@@ -4,7 +4,7 @@ import '@testing-library/jest-dom';
 import MeetingForm from './MeetingForm';
 
 beforeEach(() => {
-  // @ts-ignore
+  // @ts-expect-error: Mocking global.fetch for test environment
   global.fetch = jest.fn(() => Promise.resolve({ ok: true }));
 });
 

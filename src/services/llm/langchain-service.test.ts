@@ -3,43 +3,40 @@ import { MeetingContext } from './types';
 import { VertexAI } from '@google-cloud/vertexai';
 
 // Mock VertexAI
-jest.mock('@google-cloud/vertexai');
+jest.mock('@google-cloud/vertexai', () => ({
+  VertexAI: jest.fn().mockImplementation(() => ({
+    preview: {
+      getGenerativeModel: jest.fn().mockReturnValue({
+        generateContent: jest.fn().mockResolvedValue({
+          response: {
+            candidates: [{
+              content: {
+                parts: [{
+                  text: JSON.stringify({
+                    summary: 'Test summary',
+                    actionItems: ['Test action item'],
+                    keyDecisions: ['Test decision'],
+                    nextSteps: ['Test next step']
+                  })
+                }]
+              }
+            }]
+          }
+        })
+      })
+    }
+  }))
+}));
 
 describe('LangChainLLMService', () => {
   let service: LangChainLLMService;
-  let mockVertexAI: jest.Mocked<VertexAI>;
 
   beforeEach(() => {
     // Clear all mocks before each test
-    jest.clearAllMocks();
-
-    // Create mock implementation
-    mockVertexAI = {
-      preview: {
-        getGenerativeModel: jest.fn().mockReturnValue({
-          generateContent: jest.fn().mockResolvedValue({
-            response: {
-              candidates: [{
-                content: {
-                  parts: [{
-                    text: JSON.stringify({
-                      summary: 'Test summary',
-                      actionItems: ['Test action item'],
-                      keyDecisions: ['Test decision'],
-                      nextSteps: ['Test next step']
-                    })
-                  }]
-                }
-              }]
-            }
-          })
-        })
-      }
-    } as any;
-
-    // Create service with mock
+    (VertexAI as jest.Mock).mockClear();
+    
+    // Create service, which will use the mock
     service = new LangChainLLMService();
-    (service as any).model = mockVertexAI;
   });
 
   it('should analyze a meeting transcript', async () => {

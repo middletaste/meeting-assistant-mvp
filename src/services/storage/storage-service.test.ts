@@ -128,7 +128,7 @@ describe('StorageService', () => {
       // Get the data written to the file
       const writtenData = (fs.writeFile as jest.Mock).mock.calls[0][1];
       const meetings = JSON.parse(writtenData);
-      expect(meetings.some((m: any) => m.id === mockId && m.status === 'completed')).toBe(true);
+      expect(meetings.some((m: { id: string; status: string; }) => m.id === mockId && m.status === 'completed')).toBe(true);
     });
 
     it('should handle non-existent meeting updates', async () => {

@@ -2,14 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { StorageService } from '@/services/storage/storage-service';
 import { QueueService } from '@/services/queue/queue-service';
-import { FormData as FormDataNode, File } from 'formdata-node';
-import { FormDataEncoder } from 'form-data-encoder';
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
 
 const storageService = new StorageService();
 const queueService = new QueueService();
@@ -89,36 +81,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
-
-it('should accept audio upload and metadata', async () => {
-  const fileBuffer = Buffer.from('fake audio content');
-  const file = new File([fileBuffer], 'test-audio.mp3', { type: 'audio/mp3' });
-
-  const form = new FormDataNode();
-  form.append('audio', file);
-  form.append('participants', 'Alice,Bob');
-  form.append('meetingType', 'Planning');
-  form.append('duration', '30');
-  form.append('transcript', 'Test transcript');
-
-  const encoder = new FormDataEncoder(form);
-  const chunks: Uint8Array[] = [];
-  for await (const chunk of encoder.encode()) {
-    chunks.push(chunk);
-  }
-  // Use Uint8Array instead of Buffer
-  const bodyUint8 = Buffer.concat(chunks);
-
-  const request = new NextRequest('http://localhost:3000/api/meetings', {
-    method: 'POST',
-    headers: Object.fromEntries(Object.entries(encoder.headers)),
-    body: bodyUint8,
-  });
-
-  const response = await POST(request);
-  expect(response.status).toBe(200);
-  const json = await response.json();
-  expect(json.success).toBe(true);
-  expect(json.data.status).toBe('pending');
-}); 
+} 

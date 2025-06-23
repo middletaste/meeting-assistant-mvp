@@ -3,10 +3,16 @@ import { StorageService } from '@/services/storage/storage-service';
 
 const storageService = new StorageService();
 
+type RouteParams = {
+  params: {
+    id: string;
+  };
+};
+
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+  { params }: RouteParams
+): Promise<NextResponse> {
   try {
     const meeting = await storageService.getMeeting(params.id);
     

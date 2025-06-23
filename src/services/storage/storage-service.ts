@@ -1,12 +1,12 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { MeetingContext } from '../llm/types';
+import { MeetingContext, MeetingAnalysis } from '../llm/types';
 
 interface StoredMeeting extends MeetingContext {
   id: string;
   createdAt: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
-  analysis?: any;
+  analysis?: MeetingAnalysis;
   error?: string;
 }
 
@@ -20,7 +20,7 @@ export class StorageService {
   private async ensureStorageFile(): Promise<void> {
     try {
       await fs.access(this.storagePath);
-    } catch (error) {
+    } catch {
       try {
         // Create directory if it doesn't exist
         await fs.mkdir(path.dirname(this.storagePath), { recursive: true });
@@ -79,7 +79,7 @@ export class StorageService {
     }
   }
 
-  async updateMeetingStatus(id: string, status: StoredMeeting['status'], analysis?: any, error?: string): Promise<void> {
+  async updateMeetingStatus(id: string, status: StoredMeeting['status'], analysis?: MeetingAnalysis, error?: string): Promise<void> {
     try {
       const meetings = await this.readStorage();
       const index = meetings.findIndex(m => m.id === id);

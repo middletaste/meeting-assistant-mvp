@@ -1,5 +1,5 @@
 import { LLMServiceFactory } from './service-factory';
-import { MeetingContext } from './types';
+import { MeetingContext, LLMService } from './types';
 
 beforeAll(() => {
   jest.spyOn(console, 'log').mockImplementation(() => {});
@@ -9,7 +9,7 @@ afterAll(() => {
 });
 
 describe('LangChainLLMService (integration)', () => {
-  let service: any;
+  let service: LLMService;
 
   beforeEach(() => {
     console.log('\n=== Starting LangChain Service Integration Test ===');

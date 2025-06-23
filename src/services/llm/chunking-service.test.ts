@@ -1,9 +1,14 @@
 import { ChunkingService } from './chunking-service';
-import { MeetingContext, MeetingAnalysis } from './types';
-import { LangChainLLMService } from './langchain-service';
+import { MeetingContext } from './types';
+import { LLMService } from './types';
 
 // Mock the LLM service
-jest.mock('./langchain-service');
+jest.mock('./service-factory', () => ({
+  LLMServiceFactory: {
+    createService: jest.fn(),
+  },
+}));
+import { LLMServiceFactory } from './service-factory';
 
 beforeAll(() => {
   jest.spyOn(console, 'log').mockImplementation(() => {});
@@ -14,7 +19,7 @@ afterAll(() => {
 
 describe('ChunkingService', () => {
   let service: ChunkingService;
-  let mockLLMService: jest.Mocked<LangChainLLMService>;
+  let mockLLMService: jest.Mocked<LLMService>;
 
   beforeEach(() => {
     // Clear all mocks before each test
@@ -28,11 +33,13 @@ describe('ChunkingService', () => {
         keyDecisions: ['Test decision'],
         nextSteps: ['Test next step']
       })
-    } as any;
+    };
 
-    // Create the service with the mock
+    // Configure the factory to return the mock service
+    (LLMServiceFactory.createService as jest.Mock).mockReturnValue(mockLLMService);
+
+    // Create the service, which will get the mock from the factory
     service = new ChunkingService();
-    (service as any).llmService = mockLLMService;
   });
 
   it('should analyze a meeting transcript with chunks', async () => {
