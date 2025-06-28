@@ -23,6 +23,14 @@
       "static/chunks/648-71642fd7142380a0.js",
       "static/chunks/app/meetings/[id]/page-54e6b6a1bf847b49.js"
     ],
+    "/page": [
+      "static/chunks/webpack-57586abe07dbe25a.js",
+      "static/chunks/fd9d1056-5f55067fad1d0619.js",
+      "static/chunks/117-64b58ab44b365efe.js",
+      "static/chunks/main-app-f8e7159d289e992b.js",
+      "static/chunks/648-71642fd7142380a0.js",
+      "static/chunks/app/page-cbe8ba4e4ab7c127.js"
+    ],
     "/meetings/page": [
       "static/chunks/webpack-57586abe07dbe25a.js",
       "static/chunks/fd9d1056-5f55067fad1d0619.js",
@@ -30,14 +38,6 @@
       "static/chunks/main-app-f8e7159d289e992b.js",
       "static/chunks/648-71642fd7142380a0.js",
       "static/chunks/app/meetings/page-e6bf83f049b76cf3.js"
-    ],
-    "/page": [
-      "static/chunks/webpack-57586abe07dbe25a.js",
-      "static/chunks/fd9d1056-5f55067fad1d0619.js",
-      "static/chunks/117-64b58ab44b365efe.js",
-      "static/chunks/main-app-f8e7159d289e992b.js",
-      "static/chunks/648-71642fd7142380a0.js",
-      "static/chunks/app/page-8812ed2b5faaebe8.js"
     ]
   }
 }

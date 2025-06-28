@@ -10,14 +10,35 @@ export class ChunkingService {
     this.llmService = LLMServiceFactory.createService();
   }
 
-  // Splits the transcript into chunks (e.g., by speaker)
+  // Splits the transcript into meaningful chunks
   private splitTranscript(transcript: string): string[] {
-    const chunks = transcript.split('\n').filter(line => line.trim() !== '');
-    console.log(`\n📦 Split transcript into ${chunks.length} chunks:`);
-    chunks.forEach((chunk, index) => {
-      console.log(`\nChunk ${index + 1}:`, chunk.trim());
+    // Split by double line breaks first (speaker changes or paragraphs)
+    const chunks = transcript.split(/\n\s*\n/).filter(chunk => chunk.trim() !== '');
+    
+    // If we have too many small chunks, combine them into larger chunks
+    const targetChunkSize = 1000; // characters per chunk
+    const combinedChunks: string[] = [];
+    let currentChunk = '';
+    
+    for (const chunk of chunks) {
+      if (currentChunk.length + chunk.length > targetChunkSize && currentChunk.length > 0) {
+        combinedChunks.push(currentChunk.trim());
+        currentChunk = chunk;
+      } else {
+        currentChunk += (currentChunk ? '\n\n' : '') + chunk;
+      }
+    }
+    
+    if (currentChunk.trim()) {
+      combinedChunks.push(currentChunk.trim());
+    }
+    
+    console.log(`\n📦 Split transcript into ${combinedChunks.length} meaningful chunks:`);
+    combinedChunks.forEach((chunk, index) => {
+      console.log(`\nChunk ${index + 1} (${chunk.length} chars):`, chunk.substring(0, 100) + '...');
     });
-    return chunks;
+    
+    return combinedChunks;
   }
 
   // Summarizes each chunk and combines the results
@@ -45,11 +66,23 @@ export class ChunkingService {
 
     // Combine the summaries
     console.log('\n🔄 Combining chunk analyses...');
+    
+    // Helper function to deduplicate arrays
+    const deduplicateArray = (arr: string[]): string[] => {
+      const seen = new Set<string>();
+      return arr.filter(item => {
+        const normalized = item.toLowerCase().trim();
+        if (seen.has(normalized)) return false;
+        seen.add(normalized);
+        return true;
+      });
+    };
+    
     const combinedAnalysis: MeetingAnalysis = {
       summary: chunkSummaries.map(s => s.summary).join(' '),
-      actionItems: chunkSummaries.flatMap(s => s.actionItems),
-      keyDecisions: chunkSummaries.flatMap(s => s.keyDecisions),
-      nextSteps: chunkSummaries.flatMap(s => s.nextSteps),
+      actionItems: deduplicateArray(chunkSummaries.flatMap(s => s.actionItems)),
+      keyDecisions: deduplicateArray(chunkSummaries.flatMap(s => s.keyDecisions)),
+      nextSteps: deduplicateArray(chunkSummaries.flatMap(s => s.nextSteps)),
     };
 
     return combinedAnalysis;

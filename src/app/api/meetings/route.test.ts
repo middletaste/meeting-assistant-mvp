@@ -85,7 +85,7 @@ describe('Meetings API', () => {
 
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
-      expect(data.error).toBe('Invalid request data');
+      expect(data.error).toBe('No transcript provided and transcription could not be obtained from audio.');
     });
   });
 
@@ -159,5 +159,78 @@ describe('Meetings API', () => {
       expect(json.success).toBe(true);
       expect(json.data.status).toBe('pending');
     });
+
+    const supportedFormats = [
+      { ext: 'mp3', mime: 'audio/mp3' },
+      { ext: 'wav', mime: 'audio/wav' },
+      { ext: 'aac', mime: 'audio/aac' },
+      { ext: 'flac', mime: 'audio/flac' },
+      { ext: 'ogg', mime: 'audio/ogg' },
+      { ext: 'aiff', mime: 'audio/aiff' },
+      { ext: 'alac', mime: 'audio/alac' },
+      { ext: 'm4a', mime: 'audio/m4a' },
+    ];
+
+    supportedFormats.forEach(({ ext, mime }) => {
+      it(`should accept .${ext} audio file`, async () => {
+        const fileBuffer = Buffer.from('fake audio content');
+        const file = new File([fileBuffer], `test-audio.${ext}`, { type: mime });
+        const form = new FormDataNode();
+        form.append('audio', file);
+        form.append('participants', 'Alice,Bob');
+        form.append('meetingType', 'Planning');
+        form.append('duration', '30');
+        form.append('transcript', 'Test transcript');
+        const encoder = new FormDataEncoder(form);
+        const chunks = [];
+        for await (const chunk of encoder.encode()) {
+          chunks.push(chunk);
+        }
+        const bodyUint8 = Buffer.concat(chunks);
+        const request = new NextRequest('http://localhost:3000/api/meetings', {
+          method: 'POST',
+          headers: Object.fromEntries(Object.entries(encoder.headers)),
+          body: bodyUint8,
+        });
+        const response = await POST(request);
+        expect(response.status).toBe(200);
+        const json = await response.json();
+        expect(json.success).toBe(true);
+        expect(json.data.status).toBe('pending');
+      });
+    });
+
+    it('should reject unsupported audio file type', async () => {
+      const fileBuffer = Buffer.from('fake audio content');
+      const file = new File([fileBuffer], 'test-audio.xyz', { type: 'audio/xyz' });
+      const form = new FormDataNode();
+      form.append('audio', file);
+      form.append('participants', 'Alice,Bob');
+      form.append('meetingType', 'Planning');
+      form.append('duration', '30');
+      form.append('transcript', 'Test transcript');
+      const encoder = new FormDataEncoder(form);
+      const chunks = [];
+      for await (const chunk of encoder.encode()) {
+        chunks.push(chunk);
+      }
+      const bodyUint8 = Buffer.concat(chunks);
+      const request = new NextRequest('http://localhost:3000/api/meetings', {
+        method: 'POST',
+        headers: Object.fromEntries(Object.entries(encoder.headers)),
+        body: bodyUint8,
+      });
+      const response = await POST(request);
+      expect(response.status).toBe(400);
+      const json = await response.json();
+      expect(json.success).toBe(false);
+      expect(json.error).toMatch(/Unsupported audio file type/);
+    });
   });
-}); 
+});
+
+export type TranscriptionProvider = 'whisper' | 'elevenlabs' | 'vertexai';
+
+async function transcribeWithVertexAI(audioPath: string): Promise<string> {
+  // Upload audio, call Vertex AI API, return transcript
+}

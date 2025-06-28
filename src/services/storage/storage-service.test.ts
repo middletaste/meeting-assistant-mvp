@@ -123,7 +123,12 @@ describe('StorageService', () => {
       };
       (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify([mockStoredMeeting]));
 
-      await storageService.updateMeetingStatus(mockId, 'completed', { summary: 'Test analysis' });
+      await storageService.updateMeetingStatus(mockId, 'completed', {
+        summary: 'Test analysis',
+        actionItems: [],
+        keyDecisions: [],
+        nextSteps: []
+      });
 
       // Get the data written to the file
       const writtenData = (fs.writeFile as jest.Mock).mock.calls[0][1];
